@@ -42,3 +42,41 @@ void searchStudentByID() {
     fclose(fp);
 }
 
+void deleteStudentByID() {
+    char id[8];
+    struct Student s;
+    int found = 0;
+
+    FILE *fp = fopen("students.txt", "r");
+    FILE *temp = fopen("temp.txt", "w");
+
+    if (fp == NULL || temp == NULL) {
+        printf("? Error: Could not open file.\n");
+        return;
+    }
+
+    printf("Enter the 7-digit Digital ID of the student to delete: ");
+    scanf("%7s", id);
+
+    while (fscanf(fp, "%[^|]|%[^|]|%[^|]|%[^|]|%[^|]|%[^|]|%[^\n]\n",
+                  s.digitalID, s.name, s.department, s.college, s.year, s.phone, s.email) != EOF) {
+        if (strcmp(s.digitalID, id) != 0) {
+            fprintf(temp, "%s|%s|%s|%s|%s|%s|%s\n",
+                    s.digitalID, s.name, s.department, s.college, s.year, s.phone, s.email);
+        } else {
+            found = 1;
+        }
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    if (found) {
+        remove("students.txt");
+        rename("temp.txt", "students.txt");
+        printf("? Student with ID %s has been removed.\n", id);
+    } else {
+        remove("temp.txt");
+        printf("?? No student found with ID %s.\n", id);
+    }
+}
