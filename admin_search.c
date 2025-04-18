@@ -1,10 +1,9 @@
-// admin_search.c
 #include <stdio.h>
 #include <string.h>
 #include "admin_search.h"
 
 void searchStudentByID() {
-    char id[8];
+    char id[50];  // match size with teammate's format
     struct Student s;
     int found = 0;
 
@@ -14,24 +13,32 @@ void searchStudentByID() {
         return;
     }
 
-    printf("Enter 7-digit Digital ID of the student: ");
-    scanf("%7s", id);
+    printf("Enter Digital ID of the student: ");
+    scanf("%s", id);
 
-    while (fscanf(fp, "%[^|]|%[^|]|%[^|]|%[^|]|%[^|]|%[^|]|%[^\n]\n",
-                  s.digitalID, s.name, s.department, s.college, s.year, s.phone, s.email) != EOF) {
-        if (strcmp(s.digitalID, id) == 0) {
-            found = 1;
-            printf("\n? Student Found!\n");
-            printf("--------------------------\n");
-            printf("Digital ID  : %s\n", s.digitalID);
-            printf("Name        : %s\n", s.name);
-            printf("Department  : %s\n", s.department);
-            printf("College     : %s\n", s.college);
-            printf("Year        : %s\n", s.year);
-            printf("Phone       : %s\n", s.phone);
-            printf("Email       : %s\n", s.email);
-            printf("--------------------------\n");
-            break;
+    char line[256];
+    while (fgets(line, sizeof(line), fp)) {
+        if (strncmp(line, "  Digital ID:", 13) == 0) {
+            sscanf(line, "  Digital ID: %[^\n]", s.digitalID);
+
+            fgets(line, sizeof(line), fp); sscanf(line, "  Name: %[^\n]", s.name);
+            fgets(line, sizeof(line), fp); sscanf(line, "  Email: %[^\n]", s.email);
+            fgets(line, sizeof(line), fp); sscanf(line, "  Phone: %[^\n]", s.phone);
+            fgets(line, sizeof(line), fp); sscanf(line, "  Digital ID: %[^\n]", s.digitalID);  // redundant, but keeping the order
+            fgets(line, sizeof(line), fp); sscanf(line, "  Year: %[^\n]", s.year);
+
+            if (strcmp(s.digitalID, id) == 0) {
+                found = 1;
+                printf("\n? Student Found!\n");
+                printf("--------------------------\n");
+                printf("Digital ID  : %s\n", s.digitalID);
+                printf("Name        : %s\n", s.name);
+                printf("Email       : %s\n", s.email);
+                printf("Phone       : %s\n", s.phone);
+                printf("Year        : %s\n", s.year);
+                printf("--------------------------\n");
+                break;
+            }
         }
     }
 
@@ -43,28 +50,37 @@ void searchStudentByID() {
 }
 
 void deleteStudentByID() {
-    char id[8];
-    struct Student s;
-    int found = 0;
+    char id[50];
+    printf("Enter Digital ID of the student to delete: ");
+    scanf("%s", id);
 
     FILE *fp = fopen("students.txt", "r");
     FILE *temp = fopen("temp.txt", "w");
-
     if (fp == NULL || temp == NULL) {
         printf("? Error: Could not open file.\n");
         return;
     }
 
-    printf("Enter the 7-digit Digital ID of the student to delete: ");
-    scanf("%7s", id);
+    char line[256];
+    int found = 0;
+    int skip = 0;
 
-    while (fscanf(fp, "%[^|]|%[^|]|%[^|]|%[^|]|%[^|]|%[^|]|%[^\n]\n",
-                  s.digitalID, s.name, s.department, s.college, s.year, s.phone, s.email) != EOF) {
-        if (strcmp(s.digitalID, id) != 0) {
-            fprintf(temp, "%s|%s|%s|%s|%s|%s|%s\n",
-                    s.digitalID, s.name, s.department, s.college, s.year, s.phone, s.email);
+    while (fgets(line, sizeof(line), fp)) {
+        if (strncmp(line, "  Digital ID:", 13) == 0) {
+            char currID[50];
+            sscanf(line, "  Digital ID: %[^\n]", currID);
+
+            if (strcmp(currID, id) == 0) {
+                found = 1;
+                skip = 1;
+            }
+
+            if (!skip) fprintf(temp, "%s", line);
         } else {
-            found = 1;
+            if (!skip) fprintf(temp, "%s", line);
+            if (strstr(line, "-------------------------")) {
+                skip = 0;
+            }
         }
     }
 
